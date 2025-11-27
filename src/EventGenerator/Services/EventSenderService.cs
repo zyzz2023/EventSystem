@@ -17,8 +17,9 @@ namespace EventGenerator.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("api/events/process", _event);
-            
+                var response = await _httpClient.PostAsJsonAsync("https://localhost:7216/api/events/process", _event);
+
+
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning($"Failed to send event. Status: {response.StatusCode}");

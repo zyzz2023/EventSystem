@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddHttpClient<EventSenderService>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5001"); // URL EventProcessor
+    client.BaseAddress = new Uri("https://localhost:7216/"); // URL EventProcessor
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
