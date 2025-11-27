@@ -12,7 +12,7 @@ namespace EventProcessor.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // один-ко-многим 
+            // один ко многим 
             modelBuilder.Entity<Incident>()
                 .HasMany(i => i.Events)
                 .WithOne(e => e.Incident)
