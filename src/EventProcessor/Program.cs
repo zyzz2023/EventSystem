@@ -1,4 +1,4 @@
-using EventProcessor.Infrastructure.Data;
+﻿using EventProcessor.Infrastructure.Data;
 using EventProcessor.Infrastructure.Repositories;
 using EventProcessor.Services;
 using Microsoft.EntityFrameworkCore;
@@ -9,9 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
-builder.Services.AddScoped<IIncidentRepository, IncidentRepository>();
-builder.Services.AddHostedService<EventProcessorService>();
+    options.UseNpgsql(connectionString),
+    contextLifetime: ServiceLifetime.Singleton); // ← ВАЖНО!
+
+builder.Services.AddSingleton<IIncidentRepository, IncidentRepository>(); // ← Singleton!
+
+// 2. EventProcessorService как Singleton
+builder.Services.AddSingleton<EventProcessorService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<EventProcessorService>());
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
