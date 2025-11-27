@@ -7,6 +7,5 @@ namespace EventProcessor.Infrastructure.Repositories
         Task<Incident?> GetByIdAsync(Guid id);
         Task<List<Incident>> GetIncidentsAsync(int page = 1, int pageSize = 20);
         Task AddAsync(Incident incident);
-        Task SaveChangesAsync();
     }
 }

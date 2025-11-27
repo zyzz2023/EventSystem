@@ -6,23 +6,28 @@ namespace EventProcessor.Infrastructure.Repositories
 {
     public class IncidentRepository : IIncidentRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public IncidentRepository(AppDbContext context)
+        public IncidentRepository(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<Incident?> GetByIdAsync(Guid id)
         {
-            return await _context.Incidents
+
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Incidents
+                .AsNoTracking()
                 .Include(i => i.Events)
                 .FirstOrDefaultAsync(i => i.Id == id);
         }
 
         public async Task<List<Incident>> GetIncidentsAsync(int page = 1, int pageSize = 20)
         {
-            return await _context.Incidents
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Incidents
+                .AsNoTracking()
                 .Include(i => i.Events)
                 .OrderByDescending(i => i.Time)
                 .Skip((page - 1) * pageSize)
@@ -32,12 +37,9 @@ namespace EventProcessor.Infrastructure.Repositories
 
         public async Task AddAsync(Incident incident)
         {
-            await _context.Incidents.AddAsync(incident);
-        }
-
-        public async Task SaveChangesAsync()
-        {
-            await _context.SaveChangesAsync();
+            using var context = _contextFactory.CreateDbContext();
+            await context.Incidents.AddAsync(incident);
+            await context.SaveChangesAsync();
         }
     }
 }

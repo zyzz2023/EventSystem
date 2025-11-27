@@ -14,7 +14,7 @@ namespace EventGenerator.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var random = new Random();
-            var lastEventTime = DateTime.Now;
+            var lastEventTime = DateTime.UtcNow;
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -25,12 +25,12 @@ namespace EventGenerator.Services
                 {
                     Id = Guid.NewGuid(),
                     Type = (EventTypeEnum)random.Next(1, 4),
-                    Time = DateTime.Now
+                    Time = DateTime.UtcNow
                 };
 
                 await _eventSender.SendToProcessor(newEvent);
 
-                lastEventTime = DateTime.Now;
+                lastEventTime = DateTime.UtcNow;
             }
         }
     }

@@ -22,7 +22,7 @@ namespace EventGenerator.Controllers
             {
                 Id = Guid.NewGuid(),
                 Type = (EventTypeEnum)random.Next(1, 4),
-                Time = DateTime.Now
+                Time = DateTime.UtcNow
             };
             
             await _eventSender.SendToProcessor(newEvent);

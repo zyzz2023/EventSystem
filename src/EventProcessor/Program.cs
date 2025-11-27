@@ -8,11 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString),
-    contextLifetime: ServiceLifetime.Singleton); // ← ВАЖНО!
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//    options.UseNpgsql(connectionString),
+//    contextLifetime: ServiceLifetime.Singleton); 
 
-builder.Services.AddSingleton<IIncidentRepository, IncidentRepository>(); // ← Singleton!
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+builder.Services.AddSingleton<IIncidentRepository, IncidentRepository>();
 
 // 2. EventProcessorService как Singleton
 builder.Services.AddSingleton<EventProcessorService>();

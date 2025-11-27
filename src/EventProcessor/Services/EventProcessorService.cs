@@ -9,8 +9,6 @@ namespace EventProcessor.Services
         private readonly ILogger<EventProcessorService> _logger;
         private readonly Dictionary<Guid, PendingEvent> _pendingEvents = new();
 
-        private readonly object _lock = new object();
-
         public EventProcessorService(
             IIncidentRepository incidentRepository,
             ILogger<EventProcessorService> logger)
@@ -30,22 +28,19 @@ namespace EventProcessor.Services
 
         public void ProcessEvent(Event _event)
         {
-            lock (_lock)
+            switch (_event.Type)
             {
-                switch (_event.Type)
-                {
-                    case EventTypeEnum.Type1:
-                        ProcessType1Event(_event);
-                        break;
+                case EventTypeEnum.Type1:
+                    ProcessType1Event(_event);
+                    break;
 
-                    case EventTypeEnum.Type2:
-                        ProcessType2Event(_event);
-                        break;
+                case EventTypeEnum.Type2:
+                    ProcessType2Event(_event);
+                    break;
 
-                    case EventTypeEnum.Type3:
-                        ProcessType3Event(_event);
-                        break;
-                }
+                case EventTypeEnum.Type3:
+                    ProcessType3Event(_event);
+                    break;
             }
         }
         private void ProcessType1Event(Event type1Event)
@@ -61,7 +56,7 @@ namespace EventProcessor.Services
                 var pendingType3 = FindPendingEvent(EventTypeEnum.Type3);
                 if (pendingType3 != null)
                 {
-                    _ = CreateCompositeIncident(pendingType3.Event, type1Event, IncidentTypeEnum.Type3);
+                    _ = CreateSimpleIncident(pendingType3.Event, IncidentTypeEnum.Type3);
                     RemovePendingEvent(pendingType3.Event.Id);
                     _logger.LogInformation($"Pattern 3 matched: Event{pendingType3.Event.Id}(Type3) + Incident(Type2)");
                 }
@@ -75,27 +70,23 @@ namespace EventProcessor.Services
         }
         private void ProcessType2Event(Event type2Event)
         {
-            lock ( _lock)
+            _pendingEvents[type2Event.Id] = new PendingEvent
             {
-                _pendingEvents[type2Event.Id] = new PendingEvent
-                    {
-                        Event = type2Event,
-                        ExpiryTime = DateTime.Now.AddSeconds(20)
-                    };
-            }
+                Event = type2Event,
+                ExpiryTime = DateTime.UtcNow.AddSeconds(20)
+            };
+            
             
             _logger.LogInformation($"Event {type2Event.Id} (Type2) waiting for Type1 within 20 seconds");
         }
         private void ProcessType3Event(Event type3Event)
         {
-            lock (_lock)
+            _pendingEvents[type3Event.Id] = new PendingEvent
             {
-                _pendingEvents[type3Event.Id] = new PendingEvent
-                {
-                    Event = type3Event,
-                    ExpiryTime = DateTime.Now.AddSeconds(60)
-                };
-            }
+                Event = type3Event,
+                ExpiryTime = DateTime.UtcNow.AddSeconds(60)
+            };
+            
             
             _logger.LogInformation($"Event {type3Event.Id} (Type2) waiting for Type1 within 20 seconds");
         }
@@ -105,12 +96,11 @@ namespace EventProcessor.Services
             {
                 Id = Guid.NewGuid(),
                 Type = incidentType,
-                Time = DateTime.Now,
+                Time = DateTime.UtcNow,
                 Events = new List<Event> { _event }
             };
 
             await _incidentRepository.AddAsync(incident);
-            await _incidentRepository.SaveChangesAsync();
 
             _logger.LogInformation($"Created composite incident {incident.Id} with type {incidentType}");
         }
@@ -120,12 +110,11 @@ namespace EventProcessor.Services
             {
                 Id = Guid.NewGuid(),
                 Type = incidentType,
-                Time = DateTime.Now,
+                Time = DateTime.UtcNow,
                 Events = new List<Event> { firstEvent, secondEvent }
             };
 
             await _incidentRepository.AddAsync(incident);
-            await _incidentRepository.SaveChangesAsync();
 
             _logger.LogInformation($"Created composite incident {incident.Id} with type {incidentType}");
         }
@@ -134,48 +123,41 @@ namespace EventProcessor.Services
             List<Guid> expiredIds = new();
             List<PendingEvent> expiredEvents = new();
 
-            lock (_lock)
+            var now = DateTime.UtcNow;
+            foreach (var kvp in _pendingEvents)
             {
-                var now = DateTime.Now;
-                foreach (var kvp in _pendingEvents)
+                if (kvp.Value.ExpiryTime <= now)
                 {
-                    if (kvp.Value.ExpiryTime <= now)
-                    {
-                        expiredIds.Add(kvp.Key);
-                        expiredEvents.Add(kvp.Value);
-                    }
-                }
-
-                foreach (var id in expiredIds)
-                {
-                    _pendingEvents.Remove(id);
+                    expiredIds.Add(kvp.Key);
+                    expiredEvents.Add(kvp.Value);
                 }
             }
+
+            foreach (var id in expiredIds)
+            {
+                _pendingEvents.Remove(id);
+            }
             
+
             foreach (var _event in expiredEvents)
             {
                 _logger.LogInformation($"Event {_event.Event.Id} expired. Creating simple incident.");
                 await CreateSimpleIncident(_event.Event, IncidentTypeEnum.Type1);
             }
-
         }
+
         private PendingEvent? FindPendingEvent(EventTypeEnum eventType)
         {
-            lock (_lock)
-            {
-                return _pendingEvents.Values
-                .Where(pe => pe.Event.Type == eventType && pe.ExpiryTime > DateTime.Now)
-                .OrderBy(pe => pe.Event.Time)
-                .FirstOrDefault();
-            }
+            return _pendingEvents.Values
+            .Where(pe => pe.Event.Type == eventType && pe.ExpiryTime > DateTime.UtcNow)
+            .OrderBy(pe => pe.Event.Time)
+            .FirstOrDefault();
         }
 
         private void RemovePendingEvent(Guid eventId)
-        {
-            lock (_lock)
-            {
-                _pendingEvents.Remove(eventId);
-            }
+        {   
+            _pendingEvents.Remove(eventId);
+            
         }
         private class PendingEvent
         {
