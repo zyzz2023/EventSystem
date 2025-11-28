@@ -88,7 +88,7 @@ namespace EventProcessor.Services
             };
             
             
-            _logger.LogInformation($"Event {type3Event.Id} (Type2) waiting for Type1 within 20 seconds");
+            _logger.LogInformation($"Event {type3Event.Id} (Type3) waiting for Incident within 60 seconds");
         }
         private async Task CreateSimpleIncident(Event _event, IncidentTypeEnum incidentType)
         {
@@ -102,7 +102,7 @@ namespace EventProcessor.Services
 
             await _incidentRepository.AddAsync(incident);
 
-            _logger.LogInformation($"Created composite incident {incident.Id} with type {incidentType}");
+            _logger.LogInformation($"Created simple incident {incident.Id} with type {incidentType}");
         }
         private async Task CreateCompositeIncident(Event firstEvent, Event secondEvent, IncidentTypeEnum incidentType)
         {
