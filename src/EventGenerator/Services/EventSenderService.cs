@@ -26,7 +26,7 @@ namespace EventGenerator.Services
                 }
                 else
                 {
-                    _logger.LogInformation($"Event {_event.Id} sent successfully");
+                    _logger.LogInformation($"Event {_event.Id} ({_event.Type}) sent successfully");
                 }
             }
             catch (Exception ex)

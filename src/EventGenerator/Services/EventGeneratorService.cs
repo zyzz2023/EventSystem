@@ -28,7 +28,7 @@ namespace EventGenerator.Services
                     Time = DateTime.UtcNow
                 };
 
-                await _eventSender.SendToProcessor(newEvent);
+                //await _eventSender.SendToProcessor(newEvent);
 
                 lastEventTime = DateTime.UtcNow;
             }
