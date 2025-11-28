@@ -18,13 +18,19 @@ namespace EventProcessor.Controllers
         }
 
         [HttpPost("process")]
-        public async Task<IActionResult> ProcessEvent([FromBody] Event _event)
+        public async Task<IActionResult> ProcessEvent([FromBody] EventRequest request)
         {
-            if (_event == null)
+            if (request == null)
                 return BadRequest("Event is required");
 
             try
             {
+                var _event = new Event
+                {
+                    Id = Guid.NewGuid(),
+                    Type = request.Type,
+                    Time = request.Time
+                };
                 _eventProcessor.ProcessEvent(_event);
                 return Ok();
             }

@@ -51,6 +51,7 @@ namespace EventProcessor.Services
             {
                 _ = CreateCompositeIncident(pendingType2.Event, type1Event, IncidentTypeEnum.Type2);
                 RemovePendingEvent(pendingType2.Event.Id);
+                _logger.LogInformation($"Pattern 2 matched: Event{pendingType2.Event.Id}(Type2) + Event{type1Event.Id}(Type1)");
 
                 // Шаблон 3
                 var pendingType3 = FindPendingEvent(EventTypeEnum.Type3);
@@ -60,8 +61,6 @@ namespace EventProcessor.Services
                     RemovePendingEvent(pendingType3.Event.Id);
                     _logger.LogInformation($"Pattern 3 matched: Event{pendingType3.Event.Id}(Type3) + Incident(Type2)");
                 }
-
-                _logger.LogInformation($"Pattern 2 matched: Event{pendingType2.Event.Id}(Type2) + Event{type1Event.Id}(Type1)");
                 return;
             }
 
