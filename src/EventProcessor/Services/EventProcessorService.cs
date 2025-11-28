@@ -1,5 +1,6 @@
 ﻿using EventProcessor.Infrastructure.Repositories;
 using EventProcessor.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventProcessor.Services
 {
@@ -28,19 +29,26 @@ namespace EventProcessor.Services
 
         public void ProcessEvent(Event _event)
         {
-            switch (_event.Type)
+            try
             {
-                case EventTypeEnum.Type1:
-                    ProcessType1Event(_event);
-                    break;
+                switch (_event.Type)
+                {
+                    case EventTypeEnum.Type1:
+                        ProcessType1Event(_event);
+                        break;
 
-                case EventTypeEnum.Type2:
-                    ProcessType2Event(_event);
-                    break;
+                    case EventTypeEnum.Type2:
+                        ProcessType2Event(_event);
+                        break;
 
-                case EventTypeEnum.Type3:
-                    ProcessType3Event(_event);
-                    break;
+                    case EventTypeEnum.Type3:
+                        ProcessType3Event(_event);
+                        break;
+                }
+            }
+                 catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error processing event {_event.Id}. Event skipped.");
             }
         }
         private void ProcessType1Event(Event type1Event)
@@ -91,31 +99,53 @@ namespace EventProcessor.Services
         }
         private async Task CreateSimpleIncident(Event _event, IncidentTypeEnum incidentType)
         {
-            var incident = new Incident
+            try
             {
-                Id = Guid.NewGuid(),
-                Type = incidentType,
-                Time = DateTime.UtcNow,
-                Events = new List<Event> { _event }
-            };
+                var incident = new Incident
+                {
+                    Id = Guid.NewGuid(),
+                    Type = incidentType,
+                    Time = DateTime.UtcNow,
+                    Events = new List<Event> { _event }
+                };
 
-            await _incidentRepository.AddAsync(incident);
+                await _incidentRepository.AddAsync(incident);
 
-            _logger.LogInformation($"Created simple incident {incident.Id} with type {incidentType}");
+                _logger.LogInformation($"Created simple incident {incident.Id} with type {incidentType}");
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, $"Database error update for event {_event.Id}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error creating incident for event {_event.Id}");
+            }
         }
         private async Task CreateCompositeIncident(Event firstEvent, Event secondEvent, IncidentTypeEnum incidentType)
         {
-            var incident = new Incident
+            try
             {
-                Id = Guid.NewGuid(),
-                Type = incidentType,
-                Time = DateTime.UtcNow,
-                Events = new List<Event> { firstEvent, secondEvent }
-            };
+                var incident = new Incident
+                {
+                    Id = Guid.NewGuid(),
+                    Type = incidentType,
+                    Time = DateTime.UtcNow,
+                    Events = new List<Event> { firstEvent, secondEvent }
+                };
 
-            await _incidentRepository.AddAsync(incident);
+                await _incidentRepository.AddAsync(incident);
 
-            _logger.LogInformation($"Created composite incident {incident.Id} with type {incidentType}");
+                _logger.LogInformation($"Created composite incident {incident.Id} with type {incidentType}");
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, $"Database error update for events {firstEvent.Id} and {secondEvent}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error creating incident for events {firstEvent.Id} and {secondEvent}");
+            }
         }
         private async Task CheckExpiredEvents()
         {
